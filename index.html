@@ -207,6 +207,8 @@ button.pcard{cursor:pointer}button.pcard:hover{transform:translateY(-4px)}
 .av-pick button{width:42px;height:42px;font-size:24px;border-radius:12px;border:1.5px solid rgba(232,196,103,.35);background:rgba(0,0,0,.25);padding:0}
 .av-pick button.on{border-color:var(--gold);background:rgba(232,196,103,.25);box-shadow:0 0 0 2px var(--gold)}
 .av-pick button:disabled{opacity:.4}
+.av-pick .av-input{width:150px;font-size:16px;padding:8px 10px;border-radius:12px;border:1.5px solid rgba(232,196,103,.5);background:rgba(0,0,0,.3);color:var(--ink);text-align:center;font-family:inherit}
+.av-pick .av-ok{width:auto;height:42px;font-size:14px;font-weight:700;padding:0 14px;color:var(--ink)}
 /* SPEED */
 .speed{margin:0 0 14px;padding:10px 12px;border-radius:14px;background:rgba(255,106,61,.07);border:1px solid rgba(255,106,61,.4)}
 .speed-h{font-weight:900;font-size:14px;color:#ffd2c2;margin-bottom:6px}
@@ -278,6 +280,37 @@ button.hw{cursor:pointer}button.hw:not(:disabled):hover{transform:translateY(-4p
 .waiver canvas{display:block;width:100%;height:130px;background:#fffaf0;border:1.5px dashed #5a3d1e;border-radius:10px;touch-action:none;margin-top:6px;cursor:crosshair}
 .waiver .fine{font-size:11px;color:#8a6d4a;text-align:center;margin-top:8px}
 .waiver .stamp{text-align:center;color:#b3261e;font-weight:900;font-size:13px;margin-top:4px}
+
+/* PHOTO AVATAR */
+.av-img{width:clamp(72px,11vw,104px);height:clamp(72px,11vw,104px);border-radius:50%;object-fit:cover;border:3px solid var(--gold);box-shadow:0 8px 16px rgba(0,0,0,.5);display:block;margin:6px auto}
+.gunner.right .cowboy .av-img{transform:scaleX(-1)}
+.av-pick .av-photo{width:auto;height:42px;font-size:14px;font-weight:700;padding:0 12px;color:var(--ink)}
+.av-pick .av-thumb{width:42px;height:42px;border-radius:12px;object-fit:cover;border:2px solid var(--gold);box-shadow:0 0 0 2px var(--gold)}
+/* CHAT EMOJI */
+.chat-emo{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;padding:6px 8px;border-top:1px solid var(--line);max-height:132px;overflow:auto}
+.chat-emo button{font-size:22px;background:none;border:none;padding:4px 0;border-radius:8px}
+.chat-emo button:hover{background:rgba(232,196,103,.15)}
+.chat-f .emo-btn{padding:0 10px;font-size:20px}
+/* OMOK */
+.om-wrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+.om-names{display:flex;justify-content:space-between;width:min(100%,540px);font-family:'Black Han Sans';font-size:17px}
+.om-grid{width:min(100%,540px);aspect-ratio:1;display:grid;grid-template-columns:repeat(15,1fr);grid-template-rows:repeat(15,1fr);
+  background:#d9a85a;border-radius:10px;padding:6px;box-shadow:0 0 0 4px #7a4f1c,0 14px 30px rgba(0,0,0,.5);position:relative}
+.om-c{position:relative;border:none;background:none;padding:0;margin:0;touch-action:manipulation}
+.om-c::before{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:#5a3a12}
+.om-c::after{content:'';position:absolute;top:0;bottom:0;left:50%;width:1px;background:#5a3a12}
+.om-c:nth-child(15n+1)::before{left:50%}.om-c:nth-child(15n)::before{right:50%}
+.om-c:nth-child(-n+15)::after{top:50%}.om-c:nth-child(n+211)::after{bottom:50%}
+.om-c.blk,.om-c.wht,.om-c.can:hover{z-index:1}
+.om-c.blk>*,.om-c.wht>*{display:none}
+.om-c.blk::before,.om-c.wht::before{content:'';left:8%;right:8%;top:8%;bottom:8%;height:auto;border-radius:50%;z-index:2}
+.om-c.blk::before{background:radial-gradient(circle at 35% 30%,#666,#111 60%);box-shadow:0 2px 3px rgba(0,0,0,.6)}
+.om-c.wht::before{background:radial-gradient(circle at 35% 30%,#fff,#d6d6d6 70%);box-shadow:0 2px 3px rgba(0,0,0,.5)}
+.om-c.blk::after,.om-c.wht::after{display:none}
+.om-c.last.blk::before,.om-c.last.wht::before{outline:3px solid #e0443e;outline-offset:-1px}
+.om-c.can:hover{background:radial-gradient(circle,rgba(0,0,0,.25) 0 32%,transparent 34%)}
+.om-c:disabled{cursor:default}
+.om-timer{font-weight:900;color:var(--gold-hi);min-height:20px}
 
 /* RPS PvP pads */
 .pads{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:6px 0 16px}
@@ -440,6 +473,7 @@ button.hw{cursor:pointer}button.hw:not(:disabled):hover{transform:translateY(-4p
       <button data-tab="duel">🤠 결투</button>
       <button data-tab="poker">🃏 포커</button>
       <button data-tab="gostop">🎴 고스톱</button>
+      <button data-tab="omok">⚫ 오목</button>
       <button data-tab="coin">🪙 동전</button>
       <button data-tab="pachinko">🎰 파칭코</button>
     </nav>
@@ -545,6 +579,23 @@ button.hw{cursor:pointer}button.hw:not(:disabled):hover{transform:translateY(-4p
         <div class="pk-guide">점수: 광 3장 3점(비광 끼면 2점)·4장 4점·5장 15점 · 열끗 5장 1점(+1씩) · 고도리(2·4·8월 새) 5점 · 띠 5장 1점(+1씩) · 홍단/청단/초단 각 3점 · 피 10장 1점(+1씩, 쌍피=2장)</div>
       </div>
 
+      <!-- OMOK -->
+      <div class="table hidden" id="tab-omok">
+        <h2 class="table-title gold-text">OMOK · 오목</h2>
+        <p class="table-sub">🌐 온라인 전용 1:1 · 방장이 흑(선공) · 가로·세로·대각선으로 5개를 먼저 이으면 판돈 전부 · 한 수 40초</p>
+        <div class="online-box">
+          <div class="online-head"><span id="omOnlineStatus">🔄 연결 확인 중…</span>
+            <button class="gold-btn" id="omRoomCreate" style="padding:8px 14px;font-size:14px" disabled>＋ 방 만들기 (현재 베팅액)</button></div>
+          <ul class="room-list" id="omRoomList"></ul>
+        </div>
+        <div class="om-wrap">
+          <div class="om-names"><span id="omNameA">⚫ 흑 (방장)</span><span id="omNameB">⚪ 백 (참가자)</span></div>
+          <div class="om-grid" id="omGrid"></div>
+          <div class="om-timer" id="omTimer"></div>
+        </div>
+        <div class="msg" id="omMsg">칩을 걸고 방을 만들거나, 열린 방에 참가하세요</div>
+      </div>
+
       <!-- COIN -->
       <div class="table hidden" id="tab-coin">
         <h2 class="table-title gold-text">COIN FLIP</h2>
@@ -613,8 +664,10 @@ button.hw{cursor:pointer}button.hw:not(:disabled):hover{transform:translateY(-4p
 <div class="chat hidden" id="chatPanel">
   <div class="chat-h"><b>💬 전체 채팅</b><button class="ghost-btn" id="chatClose">닫기 ✕</button></div>
   <ul class="chat-list" id="chatList"></ul>
-  <form class="chat-f" id="chatForm" autocomplete="off"><input id="chatInput" maxlength="80" placeholder="메시지 입력 (최대 80자)"><button class="gold-btn" type="submit">보내기</button></form>
+  <div class="chat-emo hidden" id="chatEmo"></div>
+  <form class="chat-f" id="chatForm" autocomplete="off"><button type="button" class="ghost-btn emo-btn" id="chatEmoBtn" aria-label="이모티콘">😀</button><input id="chatInput" maxlength="80" placeholder="메시지 입력 (최대 80자)"><button class="gold-btn" type="submit">보내기</button></form>
 </div>
+<input type="file" id="avFile" accept="image/*" class="hidden">
 <div class="corner">
   <button id="soundBtn" title="소리">🔊</button>
   <button id="adminBtn" title="운영자">⚙️</button>
@@ -866,11 +919,12 @@ let tab='rps';
 $$('.tabs button').forEach(b=>b.onclick=()=>{
   if(busy())return toast('게임이 끝난 뒤에 이동할 수 있습니다.');
   tab=b.dataset.tab;$$('.tabs button').forEach(x=>x.classList.toggle('active',x===b));
-  ['rps','duel','poker','gostop','coin','pachinko'].forEach(t=>$('#tab-'+t).classList.toggle('hidden',tab!==t));
+  ['rps','duel','poker','gostop','omok','coin','pachinko'].forEach(t=>$('#tab-'+t).classList.toggle('hidden',tab!==t));
   $('#betPanel').classList.toggle('hidden',tab==='pachinko');
   if(tab==='duel')resetDuelView();
   if(tab==='poker')resetPokerView();
   if(tab==='gostop')resetGsView();
+  if(tab==='omok')resetOmView();
   if(tab==='coin')resetCoinView();
   if(tab==='pachinko')updatePachiLock();
 });
@@ -1512,9 +1566,9 @@ function setNetUI(){
     :NET.db&&NET.loaded?'🟡 순위는 연결됨 · 실시간 대결 연결 안 됨'
     :NET.connecting||!NET.checked?'🔄 실시간 서버에 연결하는 중…'
     :'⚪ 오프라인 — 실시간 서버에 연결되지 않아 온라인 대결을 할 수 없습니다';
-  ['#rpsOnlineStatus','#duelOnlineStatus','#pokerOnlineStatus','#gsOnlineStatus','#coinOnlineStatus'].forEach(s=>{const e=$(s);if(e)e.textContent=txt;});
+  ['#rpsOnlineStatus','#duelOnlineStatus','#pokerOnlineStatus','#gsOnlineStatus','#omOnlineStatus','#coinOnlineStatus'].forEach(s=>{const e=$(s);if(e)e.textContent=txt;});
   const ok=!(NET.db&&NET.loaded&&NET.room);
-  ['#rpsRoomCreate','#duelRoomCreate','#pokerRoomCreate','#gsRoomCreate','#coinRoomCreate'].forEach(s=>{const b=$(s);if(b)b.disabled=ok;});
+  ['#rpsRoomCreate','#duelRoomCreate','#pokerRoomCreate','#gsRoomCreate','#omRoomCreate','#coinRoomCreate'].forEach(s=>{const b=$(s);if(b)b.disabled=ok;});
 }
 
 async function initOnline(){
@@ -1628,7 +1682,7 @@ function renderRankMetaOnly(){
 }
 function pruneRaces(){
   const now=Date.now();if(now-NET.lastPrune<60000)return;NET.lastPrune=now;
-  for(const id in NET.races){const r=NET.races[id];if(now-(Number(r.createdAt)||0)>30*60000){netWrite('races/'+id,'delete');netWrite('races/'+id+'/picks/A','delete');netWrite('races/'+id+'/picks/B','delete');netWrite('races/'+id+'/gs/st','delete');}}
+  for(const id in NET.races){const r=NET.races[id];if(now-(Number(r.createdAt)||0)>30*60000){netWrite('races/'+id,'delete');netWrite('races/'+id+'/picks/A','delete');netWrite('races/'+id+'/picks/B','delete');netWrite('races/'+id+'/gs/st','delete');netWrite('races/'+id+'/om/st','delete');}}
 }
 
 /* ---------- 방 목록 ---------- */
@@ -1643,7 +1697,7 @@ function visibleRooms(game){
   }).sort((a,b)=>(Number(b.createdAt)||0)-(Number(a.createdAt)||0));
 }
 function renderRooms(){
-  for(const [game,sel] of [['rps','#rpsRoomList'],['duel','#duelRoomList'],['poker','#pokerRoomList'],['gostop','#gsRoomList'],['coin','#coinRoomList']]){
+  for(const [game,sel] of [['rps','#rpsRoomList'],['duel','#duelRoomList'],['poker','#pokerRoomList'],['gostop','#gsRoomList'],['omok','#omRoomList'],['coin','#coinRoomList']]){
     const ul=$(sel);if(!ul)continue;
     ul.textContent='';
     const list=visibleRooms(game);
@@ -1655,7 +1709,7 @@ function renderRooms(){
       const t=document.createElement('b');
       t.textContent=`🔴 ${r.hostName||'?'}`+(r.guestName?`  vs  🔵 ${r.guestName}`:'');
       const s=document.createElement('small');
-      const st={open:'⏳ 상대 모집 중',ready:'🔄 곧 시작',running:{duel:'🤠 결투 중',poker:'🃏 승부 중',gostop:'🎴 고스톱 중',coin:'🪙 던지는 중'}[game]||'✊ 대결 중',done:''}[r.status]||'';
+      const st={open:'⏳ 상대 모집 중',ready:'🔄 곧 시작',running:{duel:'🤠 결투 중',poker:'🃏 승부 중',gostop:'🎴 고스톱 중',omok:'⚫ 대국 중',coin:'🪙 던지는 중'}[game]||'✊ 대결 중',done:''}[r.status]||'';
       const winName=r.winner==='A'?r.hostName:r.winner==='B'?r.guestName:null;
       s.textContent=`판돈 각 ${won(Number(r.bet)||0)} · `+(game==='coin'?`방장 ${r.hostSide==='T'?'뒷면':'앞면'} · `:'')+(r.status==='done'?(winName?`🏁 ${winName} 승리`:'🤝 무승부(반환)'):st);
       info.append(t,s);li.appendChild(info);
@@ -1670,7 +1724,7 @@ function renderRooms(){
     }
   }
 }
-const gameMsg=(game,t,sub)=>({rps:rpsMsg,poker:pokerMsg,duel:duelMsg,gostop:gsMsg,coin:coinMsg}[game]||duelMsg)(t,sub);
+const gameMsg=(game,t,sub)=>({rps:rpsMsg,poker:pokerMsg,duel:duelMsg,gostop:gsMsg,omok:omMsg,coin:coinMsg}[game]||duelMsg)(t,sub);
 
 /* ---------- 방 만들기 / 참가 / 취소 ---------- */
 async function createRoom(game,extra){
@@ -1707,7 +1761,7 @@ async function joinRoom(id){
   const r=NET.races[id],p=me();
   if(!r||r.status!=='open'||!p||r.host===p.id)return;
   const bet=Number(r.bet)||0,game=r.game||'race';
-  if(!['rps','duel','poker','gostop','coin'].includes(game))return;
+  if(!['rps','duel','poker','gostop','omok','coin'].includes(game))return;
   if(p.chips<bet)return toast(`이 방은 ${won(bet)}이 필요합니다 (보유 ${won(p.chips)}).`);
   const ref=NET.db.doc('races/'+id);
   try{
@@ -1717,7 +1771,7 @@ async function joinRoom(id){
     if(!d||d.status!=='open'||d.guest)return toast('이미 마감된 방입니다.');
     addChips(meId,-bet);
     oroom={id,game,role:'guest',bet,joined:false};
-    await ref.update(Object.assign({guest:p.id,guestName:p.name,status:'ready'},game==='duel'?{guestAv:myAv}:{}));
+    await ref.update(Object.assign({guest:p.id,guestName:p.name,status:'ready'},game==='duel'?{guestAv:myAv,guestImg:myImg||null}:{}));
   }catch(e){
     if(oroom&&oroom.id===id&&!oroom.joined){addChips(meId,bet);oroom=null;}
     toast('참가하지 못했습니다.');
@@ -1757,6 +1811,7 @@ function handleMyRace(){
   if(oroom.game==='poker')return handleMyPoker(r);
   if(oroom.game==='gostop')return handleMyGs(r);
   if(oroom.game==='coin')return handleMyCoin(r);
+  if(oroom.game==='omok')return handleMyOm(r);
 }
 
 /* ---------- 온라인 가위바위보 ---------- */
@@ -1917,7 +1972,7 @@ function resetDuelView(){
   setNetUI();renderRooms();
   if(oroom&&oroom.game==='duel')return;
   $('#duelNameA').textContent='🔴 나';$('#duelNameB').textContent='🔵 상대';
-  $('#duelAvA').textContent=myAv;$('#duelAvB').textContent='❔';renderAvPick();
+  setAvEl($('#duelAvA'),myAv,myImg);$('#duelAvB').textContent='❔';renderAvPick();
   duelSt('A','');duelSt('B','');$('#duelA').classList.remove('win');$('#duelB').classList.remove('win');
   duelSignal('🤠 VS 🤠','');$('#fireBtn').disabled=true;
   duelMsg('칩을 걸고 방을 만들거나, 열린 방에 참가하세요','반응속도는 각자 기기에서 재기 때문에 인터넷 속도와 상관없이 공정합니다');
@@ -1939,7 +1994,7 @@ async function startOnlineDuel(r){
   $('#duelNameA').textContent='🔴 '+duel.names.A+(side==='A'?' (나)':'');
   $('#duelNameB').textContent='🔵 '+duel.names.B+(side==='B'?' (나)':'');
   duelSt('A','🔫 준비');duelSt('B','🔫 준비');
-  $('#duelAvA').textContent=cleanAv(r.hostAv);$('#duelAvB').textContent=cleanAv(r.guestAv);renderAvPick();
+  setAvEl($('#duelAvA'),cleanAv(r.hostAv),r.hostImg);setAvEl($('#duelAvB'),cleanAv(r.guestAv),r.guestImg);renderAvPick();
   $('#duelA').classList.remove('win');$('#duelB').classList.remove('win');
   duelSignal('⚔️','');
   duelMsg('⚔️ 상대 입장! 곧 결투가 시작됩니다',`판돈 ${won(duel.bet*2)} — 이긴 사람이 전부`);
@@ -2060,7 +2115,7 @@ function finishDuel(w,d){
 }
 $('#fireBtn').addEventListener('pointerdown',e=>{e.preventDefault();duelShoot(false);});
 $('#fireBtn').addEventListener('contextmenu',e=>e.preventDefault());
-$('#duelRoomCreate').onclick=()=>createRoom('duel',{hostAv:myAv});
+$('#duelRoomCreate').onclick=()=>createRoom('duel',{hostAv:myAv,hostImg:myImg||null});
 
 /* ---------- 온라인 포커 (5장 드로우, 1회 교체) ---------- */
 const PK_R='23456789TJQKA',PK_S=['♠','♥','♦','♣'],PK_LIMIT=20000;
@@ -2289,18 +2344,191 @@ $('#egg').addEventListener('click',e=>{e.stopPropagation();openWaiver();});
 
 /* ---------- 결투 캐릭터 고르기 ---------- */
 const AVATARS=['🤠','😎','🥷','🧙','🤖','👽','🐯','🦊','👻','🐸','🦁','💀'];
-const cleanAv=a=>AVATARS.includes(a)?a:'🤠';
-let myAv='🤠';try{myAv=cleanAv(localStorage.getItem(KEY+'_av'));}catch(e){}
+function firstGrapheme(str){
+  try{if(typeof Intl!=='undefined'&&Intl.Segmenter){for(const seg of new Intl.Segmenter('ko',{granularity:'grapheme'}).segment(str))return seg.segment;}}catch(e){}
+  return Array.from(str)[0]||'';
+}
+const EMOJI_RE=/\p{Extended_Pictographic}|\p{Regional_Indicator}/u;
+function cleanAv(a){      // 이모티콘 한 개만 허용 (글자·숫자 불가)
+  if(typeof a!=='string')return '🤠';
+  const g=firstGrapheme(a.trim());
+  return g&&g.length<=16&&EMOJI_RE.test(g)&&!/[\p{L}\p{N}]/u.test(g.replace(/\uFE0F|\u200D/g,''))?g:'🤠';
+}
+let myAv='🤠';try{myAv=cleanAv(localStorage.getItem(KEY+'_av')||'🤠');}catch(e){}
 function renderAvPick(){
   const box=$('#avPick');if(!box)return;box.textContent='';
   const lab=document.createElement('span');lab.textContent='내 캐릭터 고르기';box.appendChild(lab);
   const locked=!!(oroom&&oroom.game==='duel')||!['idle','done'].includes(duel.phase);
-  AVATARS.forEach(a=>{
-    const b=document.createElement('button');b.textContent=a;if(a===myAv)b.className='on';b.disabled=locked;
-    b.onclick=()=>{myAv=a;try{localStorage.setItem(KEY+'_av',a);}catch(e){}renderAvPick();if(!oroom)$('#duelAvA').textContent=a;SFX.chip();};
-    box.appendChild(b);
+  const setAv=a=>{myAv=a;myImg='';try{localStorage.setItem(KEY+'_av',a);localStorage.removeItem(KEY+'_img');}catch(e){}renderAvPick();if(!oroom)setAvEl($('#duelAvA'),a,'');SFX.chip();};
+  if(myImg){const th=document.createElement('img');th.className='av-thumb';th.alt='내 사진';th.src=myImg;box.appendChild(th);}
+  const list=AVATARS.includes(myAv)?AVATARS:[myAv,...AVATARS.slice(0,11)];
+  list.forEach(a=>{
+    const b=document.createElement('button');b.textContent=a;if(a===myAv&&!myImg)b.className='on';b.disabled=locked;
+    b.onclick=()=>setAv(a);box.appendChild(b);
   });
+  const inp=document.createElement('input');inp.className='av-input';inp.maxLength=16;inp.placeholder='😀 이모티콘 직접 입력';inp.disabled=locked;
+  const ok=document.createElement('button');ok.className='av-ok';ok.textContent='적용';ok.disabled=locked;
+  const apply=()=>{const v=inp.value.trim();if(!v)return;const a=cleanAv(v);
+    if(a==='🤠'&&firstGrapheme(v)!=='🤠'){toast('이모티콘 1개만 넣어 주세요 (글자·숫자 불가)');return;}
+    setAv(a);};
+  ok.onclick=apply;inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();apply();}});
+  const ph=document.createElement('button');ph.className='av-photo';ph.textContent=myImg?'📷 사진 바꾸기':'📷 사진 넣기';ph.disabled=locked;
+  ph.onclick=()=>{const f=$('#avFile');f.value='';f.click();};
+  box.append(inp,ok,ph);
+  if(myImg){const rm=document.createElement('button');rm.className='av-photo';rm.textContent='사진 빼기';rm.disabled=locked;rm.onclick=()=>setAv(myAv);box.appendChild(rm);}
 }
+
+/* ---------- 결투 캐릭터 사진 ---------- */
+let myImg='';try{const v=localStorage.getItem(KEY+'_img')||'';if(cleanImg(v))myImg=v;}catch(e){}
+function cleanImg(v){return typeof v==='string'&&v.length<24000&&/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v)?v:'';}
+function setAvEl(el,emoji,img){
+  el.textContent='';
+  const ok=cleanImg(img);
+  if(ok){const im=document.createElement('img');im.className='av-img';im.alt='캐릭터 사진';im.src=ok;el.appendChild(im);}
+  else el.textContent=emoji||'❔';
+}
+function loadPhoto(file){
+  if(!file||!/^image\//.test(file.type))return toast('사진 파일만 넣을 수 있습니다.');
+  const url=URL.createObjectURL(file),im=new Image();
+  im.onload=()=>{
+    const S2=112,cv=document.createElement('canvas');cv.width=S2;cv.height=S2;
+    const ctx=cv.getContext('2d'),m=Math.min(im.width,im.height);
+    ctx.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,S2,S2);   // 가운데 정사각형으로 잘라 작게 줄임
+    let q=.75,d=cv.toDataURL('image/jpeg',q);
+    while(d.length>20000&&q>.3){q-=.1;d=cv.toDataURL('image/jpeg',q);}
+    URL.revokeObjectURL(url);
+    if(!cleanImg(d))return toast('사진을 줄이지 못했습니다. 다른 사진으로 해 주세요.');
+    myImg=d;try{localStorage.setItem(KEY+'_img',d);}catch(e){}
+    renderAvPick();if(!oroom)setAvEl($('#duelAvA'),myAv,myImg);toast('📷 결투 캐릭터 사진을 넣었습니다!');
+  };
+  im.onerror=()=>{URL.revokeObjectURL(url);toast('사진을 읽지 못했습니다.');};
+  im.src=url;
+}
+
+/* ---------- 채팅 이모티콘 ---------- */
+const CHAT_EMO=['😀','😂','🤣','😍','😎','🤔','😭','😡','😱','🥳','🤯','😴','🤫','🫡','👍','👎','👏','🙏','💪','🔥','💯','❤️','💔','✨','🎉','💰','🤑','💸','🃏','🎴','🪙','🤠','⚔️','🏆','💀','👀','🤝','✌️','🍀','🎲'];
+function buildChatEmo(){
+  const box=$('#chatEmo');if(!box||box.childElementCount)return;
+  CHAT_EMO.forEach(e=>{const b=document.createElement('button');b.type='button';b.textContent=e;
+    b.onclick=()=>{const i=$('#chatInput');const st=i.selectionStart??i.value.length,en=i.selectionEnd??i.value.length;
+      if((i.value+e).length>80)return;i.value=i.value.slice(0,st)+e+i.value.slice(en);i.focus();const p=st+e.length;try{i.setSelectionRange(p,p);}catch(_){}}; box.appendChild(b);});
+}
+$('#chatEmoBtn').onclick=()=>{buildChatEmo();$('#chatEmo').classList.toggle('hidden');};
+
+/* ---------- 온라인 오목 ---------- */
+const OM_N=15,OM_LIMIT=40000;
+let om={phase:'idle'};
+function omMsg(t,sub,cls){const m=$('#omMsg');m.className='msg'+(cls?' '+cls:'');m.textContent=t;if(sub){const s=document.createElement('small');s.textContent=sub;m.appendChild(s);}}
+function omBoard(moves){const b=new Array(OM_N*OM_N).fill(null);moves.forEach((p,i)=>{b[p]=i%2===0?'A':'B';});return b;}
+function omFive(b,idx,side){
+  const r=Math.floor(idx/OM_N),c=idx%OM_N;
+  for(const [dr,dc] of [[0,1],[1,0],[1,1],[1,-1]]){
+    let n=1;
+    for(const sg of [1,-1]){let rr=r+dr*sg,cc=c+dc*sg;while(rr>=0&&rr<OM_N&&cc>=0&&cc<OM_N&&b[rr*OM_N+cc]===side){n++;rr+=dr*sg;cc+=dc*sg;}}
+    if(n>=5)return true;
+  }
+  return false;
+}
+const omMyTurn=()=>om.st&&!om.st.result&&om.phase==='play'&&om.st.turn===om.side;
+function omBuildGrid(){
+  const g=$('#omGrid');if(g.childElementCount)return;
+  for(let i=0;i<OM_N*OM_N;i++){const c=document.createElement('button');c.className='om-c';c.dataset.i=i;c.onclick=()=>omPlace(i);g.appendChild(c);}
+}
+function omRender(){
+  omBuildGrid();
+  const s=om.st;const moves=s?s.moves:[];const b=omBoard(moves),last=moves.length?moves[moves.length-1]:-1;
+  const my=omMyTurn();
+  $$('#omGrid .om-c').forEach((c,i)=>{
+    c.className='om-c'+(b[i]?(b[i]==='A'?' blk':' wht'):'')+(i===last?' last':'')+(my&&!b[i]?' can':'');
+    c.disabled=!my||!!b[i];
+  });
+  if(!s||s.result)return;
+  if(my)omMsg(`내 차례 (${om.side==='A'?'⚫ 흑':'⚪ 백'}) — 둘 곳을 누르세요`,`${moves.length}수째 · 5개를 먼저 이으면 승리`);
+  else omMsg(`${om.names[om.opp]}님 차례…`,`${moves.length}수째`);
+}
+function omTick(){
+  if(om.phase!=='play'||!om.st||om.st.result)return;
+  const left=Math.max(0,OM_LIMIT-(Date.now()-om.lastUpdate));
+  $('#omTimer').textContent=omMyTurn()?`⏱ ${Math.ceil(left/1000)}초`:'';
+  if(omMyTurn()&&left<=0){const s=JSON.parse(JSON.stringify(om.st));s.result=om.opp;s.v++;s.timeout=om.side;omCommit(s);toast('⌛ 시간 초과 — 패배');return;}
+  if(!omMyTurn()&&Date.now()-om.lastUpdate>OM_LIMIT+20000&&!om.claiming)claimOm(om.side);   // 상대 응답 없음
+  om.timer=setTimeout(omTick,250);
+}
+function omCommit(s){om.st=s;om.lastUpdate=Date.now();netWrite('races/'+om.id+'/om/st','set',s);omRender();if(s.result)claimOm(s.result);}
+function omPlace(i){
+  if(!omMyTurn())return;
+  const b=omBoard(om.st.moves);if(b[i])return;
+  const s=JSON.parse(JSON.stringify(om.st));s.moves.push(i);s.v++;
+  b[i]=om.side;
+  if(omFive(b,i,om.side))s.result=om.side;
+  else if(s.moves.length>=OM_N*OM_N)s.result='T';
+  else s.turn=om.opp;
+  tone(om.side==='A'?520:680,.06,'triangle',.07);
+  omCommit(s);
+}
+function resetOmView(){
+  if(om.phase!=='idle'&&om.phase!=='done')return;
+  setNetUI();renderRooms();omBuildGrid();
+  if(oroom&&oroom.game==='omok')return;
+  om={phase:'idle'};$('#omTimer').textContent='';
+  $('#omNameA').textContent='⚫ 흑 (방장)';$('#omNameB').textContent='⚪ 백 (참가자)';
+  omRender();
+  omMsg('칩을 걸고 방을 만들거나, 열린 방에 참가하세요','방장이 흑(선공) · 가로·세로·대각선으로 5개를 먼저 이으면 승리');
+}
+function handleMyOm(r){
+  if((r.status==='ready'||r.status==='running')&&!oroom.joined){oroom.joined=true;startOm(r);}
+  if(om.id===r.id&&om.phase!=='done'&&r.winner)finishOm(r.winner,r);
+}
+function startOm(r){
+  const side=oroom.role==='host'?'A':'B',opp=side==='A'?'B':'A',id=r.id;
+  om={phase:'wait',id,side,opp,bet:oroom.bet,names:{A:String(r.hostName||'?'),B:String(r.guestName||'?')},st:null,claiming:false,lastUpdate:Date.now(),unsub:null,timer:null};
+  $('#omNameA').textContent='⚫ '+om.names.A+(side==='A'?' (나)':'');
+  $('#omNameB').textContent='⚪ '+om.names.B+(side==='B'?' (나)':'');
+  omMsg('⚫ 상대 입장! 곧 시작합니다',`판돈 ${won(om.bet*2)} — 이긴 사람이 전부 · 한 수 ${OM_LIMIT/1000}초`);
+  renderBet();renderRooms();SFX.go();
+  om.unsub=NET.db.doc('races/'+id+'/om/st').onSnapshot(snap=>{
+    if(om.id!==id||!snap.exists)return;
+    const v=snap.data();
+    if(!v||!Number.isInteger(v.v)||!Array.isArray(v.moves)||!v.moves.every(p=>Number.isInteger(p)&&p>=0&&p<OM_N*OM_N)||(v.turn!=='A'&&v.turn!=='B'))return;
+    if(om.st&&v.v<=om.st.v)return;
+    const first=!om.st;om.st=v;om.lastUpdate=Date.now();
+    if(first){om.phase='play';omTick();}
+    else if(v.moves.length)tone(om.opp==='A'?520:680,.06,'triangle',.07);
+    omRender();
+    if(v.result&&om.phase!=='done')claimOm(v.result);
+  },()=>{});
+  if(side==='A'){
+    const st={v:1,moves:[],turn:'A',result:null};
+    om.st=st;om.phase='play';om.lastUpdate=Date.now();
+    netWrite('races/'+id+'/om/st','set',st);
+    NET.db.doc('races/'+id).update({status:'running',startedAt:Date.now()}).catch(()=>{});
+    omRender();omTick();
+  }else setTimeout(()=>{if(om.id===id&&!om.st&&om.phase!=='done')claimOm('T');},20000);
+}
+async function claimOm(result){
+  if(om.phase==='done'||om.claiming)return;
+  om.claiming=true;
+  try{const g=await claimDoc(om.id,result,{moves:om.st?om.st.moves.length:0});if(g)finishOm(g.w,g.d);else om.claiming=false;}catch(e){om.claiming=false;}
+}
+function finishOm(w,d){
+  if(om.phase==='done')return;
+  om.phase='done';clearTimeout(om.timer);$('#omTimer').textContent='';
+  omRender();
+  const p=me(),bet=om.bet,oppName=om.names[om.opp]||'상대';
+  const n=om.st?om.st.moves.length:0,line=`${n}수 만에 승부`+(om.st&&om.st.timeout?` · ${om.names[om.st.timeout]} 시간 초과`:'');
+  if(p)p.games++;
+  if(w!=='A'&&w!=='B'){addChips(meId,bet);omMsg('무승부 — 칩 반환',line);SFX.draw();}
+  else if(w===om.side){p.wins++;addChips(meId,bet*2);omMsg(`⚫⚪ 오목 승리! +${won(bet)}`,line,'win');pushLog(`${label(p)} 오목에서 ${oppName} 격파 +${won(bet)}`,'w');SFX.win();confetti();}
+  else{omMsg(`${oppName}님 승리 −${won(bet)}`,line,'lose');SFX.lose();}
+  save();
+  const un=om.unsub,id=om.id,host=om.side==='A';if(un)un();
+  if(host)setTimeout(()=>netWrite('races/'+id+'/om/st','delete'),20000);
+  oroom=null;keepOrClearBet();renderAll();renderRooms();
+  $$('#omGrid .om-c').forEach(c=>c.disabled=true);
+}
+$('#omRoomCreate').onclick=()=>createRoom('omok');
+
+$('#avFile').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(f)loadPhoto(f);});
 
 /* ---------- 반응속도 순위 ---------- */
 function renderSpeed(){
