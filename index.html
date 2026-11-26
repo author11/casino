@@ -185,6 +185,22 @@ button:disabled{cursor:not-allowed}
 .fire:disabled{filter:grayscale(.7) brightness(.6)}
 @media (max-width:560px){.duel-arena{grid-template-columns:1fr 1fr}.signal{grid-column:1/-1;order:-1}}
 
+/* POKER */
+.pk-row{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:6px 0}
+.pk-head{display:flex;justify-content:center;align-items:center;gap:12px;font-family:'Black Han Sans';font-size:18px;margin-top:8px;flex-wrap:wrap}
+.pk-head small{font-family:'Noto Sans KR';font-size:14px;color:#cfe9db;font-weight:700}
+.pcard{width:clamp(54px,9vw,78px);aspect-ratio:5/7;border-radius:10px;background:#fbf7ec;color:#1b1b1f;border:2px solid #d9cfb4;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:inherit;box-shadow:0 6px 14px rgba(0,0,0,.45);transition:transform .12s;padding:0}
+.pcard b{font-size:clamp(18px,3vw,26px);line-height:1}.pcard span{font-size:clamp(20px,3.4vw,30px);line-height:1.1}
+.pcard.red{color:#c8241d}
+.pcard.back{background:repeating-linear-gradient(45deg,#7a1410 0 6px,#5a0d0a 6px 12px);color:var(--gold);border-color:var(--gold-lo);font-size:22px}
+button.pcard{cursor:pointer}button.pcard:hover{transform:translateY(-4px)}
+.pcard.sel{transform:translateY(-14px);border-color:#e0443e;box-shadow:0 0 0 3px #e0443e,0 12px 20px rgba(0,0,0,.5)}
+.pcard.sel::after{content:'교체';position:absolute;font-size:11px;font-weight:900;color:#fff;background:#e0443e;border-radius:6px;padding:1px 5px;margin-top:-80%}
+.pcard{position:relative}
+.pk-timer{text-align:center;font-weight:900;font-size:18px;color:var(--gold-hi);min-height:24px;font-variant-numeric:tabular-nums}
+.pk-guide{text-align:center;font-size:12px;color:#bfe3cf;margin-top:6px}
+
 /* RPS PvP pads */
 .pads{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:6px 0 16px}
 .pad{border-radius:18px;padding:10px;background:rgba(0,0,0,.25);border:2px solid rgba(255,255,255,.12);text-align:center;transition:.2s}
@@ -343,6 +359,7 @@ button:disabled{cursor:not-allowed}
     <nav class="tabs">
       <button data-tab="rps" class="active">✊ 가위바위보</button>
       <button data-tab="duel">🤠 결투</button>
+      <button data-tab="poker">🃏 포커</button>
       <button data-tab="pachinko">🎰 파칭코</button>
     </nav>
     <div class="me">
@@ -400,6 +417,25 @@ button:disabled{cursor:not-allowed}
         </div>
         <div class="msg" id="duelMsg">칩을 걸고 방을 만들거나, 열린 방에 참가하세요</div>
         <button class="fire" id="fireBtn" disabled>🔫 쏴!<small>버튼 / Space</small></button>
+      </div>
+
+      <!-- POKER -->
+      <div class="table hidden" id="tab-poker">
+        <h2 class="table-title gold-text">DRAW POKER</h2>
+        <p class="table-sub">🌐 온라인 전용 1:1 · 카드 5장 받고 원하는 카드를 한 번 교체 · 족보가 높은 사람이 판돈 전부</p>
+        <div class="online-box" id="pokerOnlineBox">
+          <div class="online-head"><span id="pokerOnlineStatus">🔄 연결 확인 중…</span>
+            <button class="gold-btn" id="pokerRoomCreate" style="padding:8px 14px;font-size:14px" disabled>＋ 방 만들기 (현재 베팅액)</button></div>
+          <ul class="room-list" id="pokerRoomList"></ul>
+        </div>
+        <div class="pk-head"><span id="pkOppName">🔵 상대</span><small id="pkOppHand"></small></div>
+        <div class="pk-row" id="pkOpp"></div>
+        <div class="pk-timer" id="pkTimer"></div>
+        <div class="pk-row" id="pkMine"></div>
+        <div class="pk-head"><span id="pkMyName">🔴 나</span><small id="pkMyHand"></small></div>
+        <div class="msg" id="pokerMsg">칩을 걸고 방을 만들거나, 열린 방에 참가하세요</div>
+        <button class="gold-btn big-btn" id="pkSwap" disabled>확정</button>
+        <div class="pk-guide">족보: 스트레이트 플러시 &gt; 포카드 &gt; 풀하우스 &gt; 플러시 &gt; 스트레이트 &gt; 트리플 &gt; 투페어 &gt; 원페어 &gt; 하이카드</div>
       </div>
 
       <!-- PACHINKO -->
@@ -698,10 +734,11 @@ let tab='rps';
 $$('.tabs button').forEach(b=>b.onclick=()=>{
   if(busy())return toast('게임이 끝난 뒤에 이동할 수 있습니다.');
   tab=b.dataset.tab;$$('.tabs button').forEach(x=>x.classList.toggle('active',x===b));
-  $('#tab-rps').classList.toggle('hidden',tab!=='rps');$('#tab-duel').classList.toggle('hidden',tab!=='duel');
+  $('#tab-rps').classList.toggle('hidden',tab!=='rps');$('#tab-duel').classList.toggle('hidden',tab!=='duel');$('#tab-poker').classList.toggle('hidden',tab!=='poker');
   $('#tab-pachinko').classList.toggle('hidden',tab!=='pachinko');
   $('#betPanel').classList.toggle('hidden',tab==='pachinko');
   if(tab==='duel')resetDuelView();
+  if(tab==='poker')resetPokerView();
   if(tab==='pachinko')updatePachiLock();
 });
 
@@ -1340,9 +1377,9 @@ function setNetUI(){
     :NET.db&&NET.loaded?'🟡 순위는 연결됨 · 실시간 대결 연결 안 됨'
     :NET.connecting||!NET.checked?'🔄 실시간 서버에 연결하는 중…'
     :'⚪ 오프라인 — 실시간 서버에 연결되지 않아 온라인 대결을 할 수 없습니다';
-  ['#rpsOnlineStatus','#duelOnlineStatus'].forEach(s=>{const e=$(s);if(e)e.textContent=txt;});
+  ['#rpsOnlineStatus','#duelOnlineStatus','#pokerOnlineStatus'].forEach(s=>{const e=$(s);if(e)e.textContent=txt;});
   const ok=!(NET.db&&NET.loaded&&NET.room);
-  ['#rpsRoomCreate','#duelRoomCreate'].forEach(s=>{const b=$(s);if(b)b.disabled=ok;});
+  ['#rpsRoomCreate','#duelRoomCreate','#pokerRoomCreate'].forEach(s=>{const b=$(s);if(b)b.disabled=ok;});
 }
 
 async function initOnline(){
@@ -1471,7 +1508,7 @@ function visibleRooms(game){
   }).sort((a,b)=>(Number(b.createdAt)||0)-(Number(a.createdAt)||0));
 }
 function renderRooms(){
-  for(const [game,sel] of [['rps','#rpsRoomList'],['duel','#duelRoomList']]){
+  for(const [game,sel] of [['rps','#rpsRoomList'],['duel','#duelRoomList'],['poker','#pokerRoomList']]){
     const ul=$(sel);if(!ul)continue;
     ul.textContent='';
     const list=visibleRooms(game);
@@ -1483,7 +1520,7 @@ function renderRooms(){
       const t=document.createElement('b');
       t.textContent=`🔴 ${r.hostName||'?'}`+(r.guestName?`  vs  🔵 ${r.guestName}`:'');
       const s=document.createElement('small');
-      const st={open:'⏳ 상대 모집 중',ready:'🔄 곧 시작',running:game==='duel'?'🤠 결투 중':'✊ 대결 중',done:''}[r.status]||'';
+      const st={open:'⏳ 상대 모집 중',ready:'🔄 곧 시작',running:game==='duel'?'🤠 결투 중':game==='poker'?'🃏 승부 중':'✊ 대결 중',done:''}[r.status]||'';
       const winName=r.winner==='A'?r.hostName:r.winner==='B'?r.guestName:null;
       s.textContent=`판돈 각 ${won(Number(r.bet)||0)} · `+(r.status==='done'?(winName?`🏁 ${winName} 승리`:'🤝 무승부(반환)'):st);
       info.append(t,s);li.appendChild(info);
@@ -1498,7 +1535,7 @@ function renderRooms(){
     }
   }
 }
-const gameMsg=(game,t,sub)=>game==='rps'?rpsMsg(t,sub):duelMsg(t,sub);
+const gameMsg=(game,t,sub)=>game==='rps'?rpsMsg(t,sub):game==='poker'?pokerMsg(t,sub):duelMsg(t,sub);
 
 /* ---------- 방 만들기 / 참가 / 취소 ---------- */
 async function createRoom(game){
@@ -1535,7 +1572,7 @@ async function joinRoom(id){
   const r=NET.races[id],p=me();
   if(!r||r.status!=='open'||!p||r.host===p.id)return;
   const bet=Number(r.bet)||0,game=r.game||'race';
-  if(game!=='rps'&&game!=='duel')return;
+  if(game!=='rps'&&game!=='duel'&&game!=='poker')return;
   if(p.chips<bet)return toast(`이 방은 ${won(bet)}이 필요합니다 (보유 ${won(p.chips)}).`);
   const ref=NET.db.doc('races/'+id);
   try{
@@ -1582,6 +1619,7 @@ function handleMyRace(){
   }
   if(oroom.game==='rps')return handleMyRps(r);
   if(oroom.game==='duel')return handleMyDuel(r);
+  if(oroom.game==='poker')return handleMyPoker(r);
 }
 
 /* ---------- 온라인 가위바위보 ---------- */
@@ -1882,6 +1920,192 @@ function finishDuel(w,d){
 $('#fireBtn').addEventListener('pointerdown',e=>{e.preventDefault();duelShoot(false);});
 $('#fireBtn').addEventListener('contextmenu',e=>e.preventDefault());
 $('#duelRoomCreate').onclick=()=>createRoom('duel');
+
+/* ---------- 온라인 포커 (5장 드로우, 1회 교체) ---------- */
+const PK_R='23456789TJQKA',PK_S=['♠','♥','♦','♣'],PK_LIMIT=20000;
+const PK_NAMES=['하이카드','원페어','투페어','트리플','스트레이트','플러시','풀하우스','포카드','스트레이트 플러시'];
+const pkRank=c=>c%13,pkSuit=c=>Math.floor(c/13);
+const pkLabel=c=>{const r=PK_R[pkRank(c)];return (r==='T'?'10':r)+PK_S[pkSuit(c)];};
+function pkEval(h){   // [족보, 비교용 숫자들...]
+  const rs=h.map(pkRank).sort((a,b)=>b-a),cnt={};rs.forEach(r=>cnt[r]=(cnt[r]||0)+1);
+  const groups=Object.entries(cnt).map(([r,c])=>[c,+r]).sort((a,b)=>b[0]-a[0]||b[1]-a[1]);
+  const flush=h.every(c=>pkSuit(c)===pkSuit(h[0]));
+  const uniq=[...new Set(rs)];let straightHi=-1;
+  if(uniq.length===5){if(uniq[0]-uniq[4]===4)straightHi=uniq[0];else if(uniq.join()==='12,3,2,1,0')straightHi=3;}
+  const kick=groups.map(g=>g[1]);
+  if(straightHi>=0&&flush)return [8,straightHi];
+  if(groups[0][0]===4)return [7,...kick];
+  if(groups[0][0]===3&&groups[1][0]===2)return [6,...kick];
+  if(flush)return [5,...rs];
+  if(straightHi>=0)return [4,straightHi];
+  if(groups[0][0]===3)return [3,...kick];
+  if(groups[0][0]===2&&groups[1][0]===2)return [2,...kick];
+  if(groups[0][0]===2)return [1,...kick];
+  return [0,...rs];
+}
+function pkCmp(a,b){for(let i=0;i<Math.max(a.length,b.length);i++){const d=(a[i]||0)-(b[i]||0);if(d)return d;}return 0;}
+let poker={phase:'idle'};   // idle | intro | swap | waiting | done
+function pokerMsg(t,sub,cls){const m=$('#pokerMsg');m.className='msg'+(cls?' '+cls:'');m.textContent=t;if(sub){const s=document.createElement('small');s.textContent=sub;m.appendChild(s);}}
+function pkCardEl(c,opts){
+  const d=document.createElement(opts&&opts.btn?'button':'div');
+  if(c==null){d.className='pcard back';d.textContent='◆';return d;}
+  d.className='pcard'+(pkSuit(c)===1||pkSuit(c)===2?' red':'')+(opts&&opts.sel?' sel':'');
+  const r=document.createElement('b');r.textContent=pkLabel(c).slice(0,-1);
+  const s=document.createElement('span');s.textContent=PK_S[pkSuit(c)];
+  d.append(r,s);return d;
+}
+function pkRender(){
+  const mine=$('#pkMine'),opp=$('#pkOpp');mine.textContent='';opp.textContent='';
+  const hand=poker.hand||[null,null,null,null,null];
+  hand.forEach((c,i)=>{
+    const el=pkCardEl(c,{btn:poker.phase==='swap',sel:poker.sel&&poker.sel.has(i)});
+    if(poker.phase==='swap')el.onclick=()=>{poker.sel.has(i)?poker.sel.delete(i):poker.sel.add(i);SFX.chip();pkRender();};
+    mine.appendChild(el);
+  });
+  (poker.oppHand||[null,null,null,null,null]).forEach(c=>opp.appendChild(pkCardEl(c)));
+  const btn=$('#pkSwap');
+  btn.disabled=poker.phase!=='swap';
+  const n=poker.sel?poker.sel.size:0;
+  btn.textContent=poker.phase==='swap'?(n?`🔄 ${n}장 바꾸고 확정`:'✋ 그대로 확정'):'확정';
+  $('#pkMyHand').textContent=poker.hand&&poker.hand[0]!=null?PK_NAMES[pkEval(poker.hand)[0]]:'';
+}
+function resetPokerView(){
+  if(poker.phase!=='idle'&&poker.phase!=='done')return;
+  setNetUI();renderRooms();
+  if(oroom&&oroom.game==='poker')return;
+  poker={phase:'idle'};
+  $('#pkOppName').textContent='🔵 상대';$('#pkMyName').textContent='🔴 나';$('#pkOppHand').textContent='';$('#pkTimer').textContent='';
+  pkRender();
+  pokerMsg('칩을 걸고 방을 만들거나, 열린 방에 참가하세요','카드 5장 → 원하는 카드를 한 번 교체 → 족보가 높은 사람이 판돈 전부');
+}
+function handleMyPoker(r){
+  if((r.status==='ready'||r.status==='running')&&!oroom.joined){oroom.joined=true;startOnlinePoker(r);}
+  if(poker.id===r.id&&poker.phase!=='done'){
+    if(r.winner)finishPoker(r.winner,r);
+    else if(r.status==='running'&&!poker.started&&Array.isArray(r.deck))beginPoker(r.deck);
+  }
+}
+async function startOnlinePoker(r){
+  const side=oroom.role==='host'?'A':'B',opp=side==='A'?'B':'A',id=r.id;
+  poker={phase:'intro',id,side,opp,bet:oroom.bet,names:{A:String(r.hostName||'?'),B:String(r.guestName||'?')},
+         res:{},started:false,goSent:false,claiming:false,nr:null,unsub:null,hand:null,oppHand:null,sel:new Set(),timers:[]};
+  $('#pkMyName').textContent=(side==='A'?'🔴 ':'🔵 ')+poker.names[side]+' (나)';
+  $('#pkOppName').textContent=(opp==='A'?'🔴 ':'🔵 ')+poker.names[opp];
+  $('#pkOppHand').textContent='';pkRender();
+  pokerMsg('🃏 상대 입장! 곧 카드를 나눠 줍니다',`판돈 ${won(poker.bet*2)} — 이긴 사람이 전부`);
+  renderBet();renderRooms();SFX.go();
+  poker.unsub=NET.db.collection('races/'+id+'/picks').onSnapshot(snap=>{
+    if(poker.id!==id)return;
+    snap.docs.forEach(d=>{
+      if(d.id!=='A'&&d.id!=='B')return;const v=d.data()||{};
+      const h=Array.isArray(v.hand)?v.hand.map(Number).filter(c=>Number.isInteger(c)&&c>=0&&c<52):[];
+      if(h.length===5){poker.res[d.id]={hand:h,swapped:Number(v.swapped)||0};
+        if(d.id===poker.opp&&poker.phase!=='done')$('#pkOppHand').textContent=`✅ 교체 완료 (${poker.res[d.id].swapped}장 바꿈)`;}
+    });
+    if(poker.res.A&&poker.res.B)resolvePoker();
+  },()=>{});
+  try{
+    const nr=await NET.room.join('g-'+id);
+    if(poker.id!==id){nr.leave();return;}
+    poker.nr=nr;
+    nr.on('go',m=>{if(m.data&&m.data.id===id&&Array.isArray(m.data.deck))beginPoker(m.data.deck);});
+    nr.onPeers(ch=>{
+      if(poker.id!==id)return;let here=false;
+      for(const pe of ch.peers){if(pe.isMe)continue;const pr=pe.presence||{};if(pr.race!==id||pr.side!==poker.opp)continue;here=true;
+        if(pr.st==='swapping'&&poker.phase==='swap')$('#pkOppHand').textContent='🤔 고민 중…';}
+      if(poker.side==='A'&&here&&!poker.goSent)sendGoPoker();
+    });
+    nr.presence({race:id,side,st:'ready'});
+  }catch(e){}
+  if(side==='A')setTimeout(()=>{if(poker.id===id&&!poker.goSent)sendGoPoker();},4000);
+  else setTimeout(()=>{if(poker.id===id&&!poker.started&&poker.phase!=='done')claimPoker('T');},15000);
+}
+function sendGoPoker(){
+  if(poker.goSent)return;poker.goSent=true;
+  const deck=[...Array(52).keys()];
+  for(let i=51;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
+  NET.db.doc('races/'+poker.id).update({status:'running',startedAt:Date.now(),deck}).catch(()=>{});
+  if(poker.nr)poker.nr.emit('go',{id:poker.id,deck}).catch(()=>{});
+}
+function beginPoker(deck){
+  if(poker.started||poker.phase==='done')return;
+  if(!Array.isArray(deck)||deck.length!==52)return;
+  poker.started=true;poker.deck=deck.map(Number);
+  const base=poker.side==='A'?0:5;            // A: 0~4, B: 5~9
+  poker.hand=poker.deck.slice(base,base+5);
+  poker.spare=poker.deck.slice(poker.side==='A'?10:15,poker.side==='A'?15:20);   // 교체용 카드(겹치지 않음)
+  poker.phase='swap';poker.sel=new Set();poker.t0=Date.now();
+  if(poker.nr)poker.nr.presence({st:'swapping'}).catch(()=>{});
+  $('#pkOppHand').textContent='🤔 고민 중…';
+  pokerMsg('바꿀 카드를 눌러 고르세요',`20초 안에 확정 · 고른 카드만 새 카드로 바뀝니다`);
+  SFX.go();pkRender();
+  const tick=()=>{
+    if(poker.phase!=='swap')return;
+    const left=Math.max(0,PK_LIMIT-(Date.now()-poker.t0));
+    $('#pkTimer').textContent=`⏱ ${(left/1000).toFixed(1)}초`;
+    if(left<=0){pokerConfirm();return;}
+    poker.timers.push(setTimeout(tick,100));
+  };
+  tick();
+}
+function pokerConfirm(){
+  if(poker.phase!=='swap')return;
+  poker.timers.forEach(clearTimeout);poker.timers=[];
+  let k=0;const idx=[...poker.sel].sort((a,b)=>a-b);
+  idx.forEach(i=>{poker.hand[i]=poker.spare[k++];});
+  poker.phase='waiting';poker.sel=new Set();$('#pkTimer').textContent='';
+  poker.res[poker.side]={hand:poker.hand.slice(),swapped:idx.length};
+  netWrite('races/'+poker.id+'/picks/'+poker.side,'set',{hand:poker.hand.slice(),swapped:idx.length});
+  if(poker.nr)poker.nr.presence({st:'done'}).catch(()=>{});
+  pokerMsg(`내 패: ${PK_NAMES[pkEval(poker.hand)[0]]}`,`${idx.length}장 교체 · 상대를 기다리는 중…`);
+  SFX.chip();pkRender();
+  const id=poker.id;
+  setTimeout(()=>{if(poker.id===id&&poker.phase!=='done')resolvePoker(true);},PK_LIMIT+8000);
+  if(poker.res.A&&poker.res.B)resolvePoker();
+}
+async function resolvePoker(force){
+  if(poker.phase==='done'||poker.claiming)return;
+  const a=poker.res.A,b=poker.res.B;
+  if(!force&&!(a&&b))return;
+  let w;
+  if(!a&&!b)w='T';else if(!a)w='B';else if(!b)w='A';
+  else{const c=pkCmp(pkEval(a.hand),pkEval(b.hand));w=c>0?'A':c<0?'B':'T';}
+  await claimPoker(w,{handA:a?a.hand:null,handB:b?b.hand:null});
+}
+async function claimPoker(result,extra){
+  if(poker.phase==='done'||poker.claiming)return;
+  poker.claiming=true;
+  try{const g=await claimDoc(poker.id,result,extra);if(g)finishPoker(g.w,g.d);else poker.claiming=false;}catch(e){poker.claiming=false;}
+}
+function finishPoker(w,d){
+  if(poker.phase==='done')return;
+  poker.timers.forEach(clearTimeout);poker.timers=[];
+  const ok=h=>Array.isArray(h)&&h.length===5&&h.every(c=>Number.isInteger(c)&&c>=0&&c<52);
+  const hand=s=>ok(d&&d['hand'+s])?d['hand'+s]:poker.res[s]?poker.res[s].hand:null;
+  const hA=hand('A'),hB=hand('B');
+  poker.phase='done';
+  if(hand(poker.side))poker.hand=hand(poker.side);
+  poker.oppHand=hand(poker.opp);
+  const nm=h=>h?PK_NAMES[pkEval(h)[0]]:'미제출';
+  $('#pkOppHand').textContent=poker.oppHand?`🃏 ${nm(poker.oppHand)}`:'미제출';
+  pkRender();
+  const p=me(),bet=poker.bet,oppName=poker.names[poker.opp]||'상대';
+  const line=`🔴 ${poker.names.A}: ${nm(hA)}  vs  🔵 ${poker.names.B}: ${nm(hB)}`;
+  if(p)p.games++;
+  if(w!=='A'&&w!=='B'){addChips(meId,bet);pokerMsg('무승부 — 칩 반환',line);SFX.draw();}
+  else if(w===poker.side){p.wins++;addChips(meId,bet*2);pokerMsg(`🏆 포커 승리! +${won(bet)}`,line,'win');
+    pushLog(`${label(p)} 포커에서 ${nm(hand(poker.side))}(으)로 ${oppName} 격파 +${won(bet)}`,'w');SFX.win();confetti();}
+  else{pokerMsg(`${oppName}님 승리 −${won(bet)}`,line,'lose');SFX.lose();}
+  save();
+  const nr=poker.nr,un=poker.unsub,id=poker.id,host=poker.side==='A';
+  setTimeout(()=>{if(nr)nr.leave().catch(()=>{});},2500);
+  if(un)un();
+  if(host)setTimeout(()=>{netWrite('races/'+id+'/picks/A','delete');netWrite('races/'+id+'/picks/B','delete');},20000);
+  oroom=null;keepOrClearBet();renderAll();renderRooms();
+}
+$('#pkSwap').onclick=pokerConfirm;
+$('#pokerRoomCreate').onclick=()=>createRoom('poker');
+
 
 
 /* ===================== KEYBOARD ===================== */
