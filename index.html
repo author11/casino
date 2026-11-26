@@ -215,6 +215,18 @@ button:disabled{cursor:not-allowed}
 .pachi-odds{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:12px 0 0;font-size:12px;color:#cfe9db}
 .pachi-odds span{padding:4px 10px;border-radius:999px;background:rgba(0,0,0,.3);border:1px solid rgba(232,196,103,.3)}
 
+/* NOW ONLINE */
+.now{margin-bottom:14px;padding:12px;border-radius:16px;background:rgba(62,207,122,.07);border:1px solid rgba(62,207,122,.4)}
+.now-h{display:flex;align-items:center;gap:8px;font-weight:900;font-size:15px;color:#c9f7da;margin-bottom:8px}
+.now-h::before{content:'';width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 1.4s steps(2) infinite}
+.now-h b{color:#fff;font-size:18px}
+.now-list{list-style:none;margin:0;padding:0;display:grid;gap:5px;max-height:220px;overflow:auto}
+.rank .now-list li{display:flex;grid-template-columns:none;align-items:center;justify-content:space-between;gap:8px;font-size:13.5px;font-weight:700;padding:6px 10px;border-radius:10px;background:rgba(0,0,0,.35);border:1px solid rgba(62,207,122,.3);white-space:nowrap}
+.rank .now-list li.mine{border-color:var(--gold);color:var(--gold-hi)}
+.rank .now-list li small{color:#cfe9db;font-weight:500;font-variant-numeric:tabular-nums}
+.now-note{font-size:11.5px;color:var(--muted);margin-top:6px}
+.rank .on{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);margin-right:6px;vertical-align:1px}
+
 /* ONLINE */
 .online-box{margin:-4px 0 14px;padding:12px;border-radius:16px;background:rgba(0,0,0,.28);border:1.5px solid rgba(232,196,103,.35)}
 .online-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between;font-size:13px;color:#cfe9db;margin-bottom:8px}
@@ -451,6 +463,11 @@ button:disabled{cursor:not-allowed}
     </div>
 
     <aside class="rank">
+      <div class="now">
+        <div class="now-h">지금 접속 중 <b id="nowCount">0</b>명</div>
+        <ul class="now-list" id="nowList"></ul>
+        <div class="now-note" id="nowNote"></div>
+      </div>
       <h2 class="gold-text">LEADERBOARD</h2>
       <div class="meta" id="rankMeta"></div>
       <ol id="rankList"></ol>
@@ -601,10 +618,11 @@ function busy(){return rps.active||rps.reveal||(race&&!race.done)||pachi.busy||!
 /* ===================== RENDER ===================== */
 function renderHeader(){
   const p=me();if(!p)return;
-  $('#meId').textContent=`${p.id} ${p.name}`;
+  $('#meId').textContent=`${p.id}${p.name}`;
   $('#meBal').textContent=won(p.chips);
 }
 function renderRank(){
+  renderOnline();
   const arr=Object.values(S.players).sort((a,b)=>b.chips-a.chips||a.id.localeCompare(b.id));
   const total=arr.reduce((s,p)=>s+p.chips,0);
   $('#rankMeta').textContent=`참가자 ${arr.length}명 · 전체 칩 ${won(total)} · ${netBadge()}`;
@@ -613,7 +631,7 @@ function renderRank(){
     const bd=breakdown(p.chips);
     const top=[...new Set(bd)].slice(0,4).map(v=>chipHTML(CHIP_BY_V[v])).join('');
     return `<li class="${p.id===meId?'me-row':''}"><div class="pos">${medal[i]||(i+1)}</div>
-      <div class="nm">${esc(p.id)} ${esc(p.name)}<small>${p.games}전 ${p.wins}승</small></div>
+      <div class="nm">${isOnline(p.id)?'<span class="on" title="접속 중"></span>':''}${esc(p.id)}${esc(p.name)}<small>${p.games}전 ${p.wins}승</small></div>
       <div class="amt">${won(p.chips)}<small>${top} 칩 ${bd.length}개</small></div></li>`;
   }).join(''):'<li><div></div><div class="nm" style="color:var(--muted)">아직 참가자가 없습니다</div><div></div></li>';
   const fmt=t=>{const d=new Date(t);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
@@ -650,7 +668,11 @@ CHIPS.forEach((c,i)=>{const w=document.createElement('div');w.innerHTML=chipHTML
 
 $('#loginForm').addEventListener('submit',async e=>{
   e.preventDefault();
-  if(!NET.ready){$('#loginErr').textContent='⏳ 서버에서 명단을 불러오는 중입니다. 잠시 후 다시 눌러 주세요.';return;}
+  if(!NET.ready){
+    $('#loginErr').textContent='⏳ 실시간 서버와 연결하는 중입니다… 연결되면 바로 입장합니다';
+    for(let i=0;i<100&&!NET.ready;i++)await sleep(200);
+    $('#loginErr').textContent='';
+  }
   const inp=$('#loginInput');const r=await enter(inp.value);
   if(!r.ok){$('#loginErr').textContent='⛔ '+r.msg;inp.classList.remove('shake');void inp.offsetWidth;inp.classList.add('shake');SFX.lose();return;}
   meId=r.player.id;try{sessionStorage.setItem(KEY+'_me',meId);}catch(e){}
@@ -658,12 +680,12 @@ $('#loginForm').addEventListener('submit',async e=>{
   showApp();SFX.win();
   toast(r.isNew?`환영합니다, ${r.player.name}님! ${won(S.settings.start)} 칩이 지급되었습니다.`:`다시 오셨군요, ${r.player.name}님!`);
 });
-function showApp(){$('#login').classList.add('hidden');$('#app').classList.remove('hidden');bet=[];resetRaceView();renderAll();}
+function showApp(){$('#login').classList.add('hidden');$('#app').classList.remove('hidden');bet=[];resetRaceView();renderAll();announce();}
 function showLogin(){$('#app').classList.add('hidden');$('#login').classList.remove('hidden');$('#loginInput').focus();}
 $('#logoutBtn').onclick=()=>{
   if(busy())return toast('게임 진행 중에는 퇴장할 수 없습니다.');
   meId=null;p2Id=null;try{sessionStorage.removeItem(KEY+'_me');}catch(e){}
-  showLogin();
+  showLogin();announce();
 };
 
 /* ===================== BET ===================== */
@@ -933,7 +955,7 @@ function openP2Modal(){
     const r=await enter($('#p2Input').value);
     if(!r.ok){$('#p2Err').textContent='⛔ '+r.msg;return;}
     if(r.player.id===meId){$('#p2Err').textContent='⛔ 자기 자신과는 대결할 수 없습니다.';return;}
-    p2Id=r.player.id;closeModal();resetRaceView();renderAll();
+    p2Id=r.player.id;closeModal();resetRaceView();renderAll();announce();
     toast(`${r.player.name}님 입장! ${r.isNew?`(신규 ${won(S.settings.start)} 지급)`:''}`);
   };
   $('#p2Ok').onclick=go;$('#p2Cancel').onclick=closeModal;
@@ -1179,6 +1201,269 @@ function pachiLoop(now){
 }
 requestAnimationFrame(pachiLoop);
 
+/* ===================== 실시간 서버 (HTML 파일용 · 공개 MQTT 브로커) =====================
+   claude.ai 링크가 아닌 일반 HTML 파일로 열었을 때, 공개 MQTT 브로커를 통해
+   모든 기기의 데이터를 실시간으로 공유한다. 내용은 AES-GCM으로 암호화해서 보낸다. */
+const MQ_BROKERS=['wss://broker.emqx.io:8084/mqtt','wss://broker.hivemq.com:8884/mqtt'];
+const MQ_CODE='allin-chiphouse-7k3q9x2m4w';   // 같은 파일을 쓰는 모든 기기가 이 코드로 모입니다
+const MQ={cli:null,root:'',cipher:null,cache:new Map(),leases:new Map(),ls:new Set(),settle:new Map(),
+  q:Promise.resolve(),pq:Promise.resolve(),connected:false,connFns:[],rooms:{},dirty:new Set(),flushT:null,broker:'',
+  peer:'p'+Math.random().toString(36).slice(2,12)};
+const mqTE=new TextEncoder(),mqTD=new TextDecoder();
+function mqCat(arrs){let n=0;for(const a of arrs)n+=a.length;const o=new Uint8Array(n);let i=0;for(const a of arrs){o.set(a,i);i+=a.length;}return o;}
+const mqU8=a=>a instanceof Uint8Array?a:new Uint8Array(a);
+function mqHash(s){let h=2166136261>>>0;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}return h.toString(36);}
+
+/* --- 최소 MQTT 3.1.1 클라이언트 (WebSocket) --- */
+function MqttWS(url,clientId,will){
+  const self={connected:false,onmsg:null,onstate:null};
+  let ws=null,pid=1,ping=null,buf=new Uint8Array(0),closed=false,backoff=1000;
+  const subs=new Set(),idFilter={},waiters={},pend=new Map();
+  const str=s=>{const b=mqTE.encode(s);return mqCat([mqU8([b.length>>8,b.length&255]),b]);};
+  const rlen=n=>{const o=[];do{let d=n%128;n=Math.floor(n/128);if(n>0)d|=128;o.push(d);}while(n>0);return mqU8(o);};
+  const pkt=(h,parts)=>{const body=mqCat(parts);return mqCat([mqU8([h]),rlen(body.length),body]);};
+  const send=b=>{try{if(ws&&ws.readyState===1)ws.send(b);}catch(e){}};
+  const nid=()=>{pid=pid%65000+1;return pid;};
+  function sendSub(f){const id=nid();idFilter[id]=f;send(pkt(0x82,[mqU8([id>>8,id&255]),str(f),mqU8([0])]));}
+  function setConn(v){if(self.connected===v)return;self.connected=v;if(self.onstate)self.onstate(v);}
+  function open(){
+    try{ws=new WebSocket(url,['mqtt']);}catch(e){setTimeout(open,backoff);return;}
+    ws.binaryType='arraybuffer';
+    ws.onopen=()=>{
+      let flags=0x02;const pl=[str(clientId)];
+      if(will){flags|=0x04|0x20;pl.push(str(will.topic));const wb=will.payload||new Uint8Array(0);pl.push(mqU8([wb.length>>8,wb.length&255]),wb);}
+      send(pkt(0x10,[str('MQTT'),mqU8([4,flags,0,40]),...pl]));
+    };
+    ws.onmessage=e=>{buf=mqCat([buf,new Uint8Array(e.data)]);parse();};
+    ws.onclose=()=>{clearInterval(ping);setConn(false);buf=new Uint8Array(0);if(!closed){setTimeout(open,backoff);backoff=Math.min(backoff*2,15000);}};
+    ws.onerror=()=>{};
+  }
+  function parse(){
+    while(buf.length>=2){
+      let mul=1,rl=0,i=1,b;
+      do{if(i>=buf.length)return;b=buf[i++];rl+=(b&127)*mul;mul*=128;}while(b&128);
+      if(buf.length<i+rl)return;
+      const h=buf[0],body=buf.slice(i,i+rl);buf=buf.slice(i+rl);
+      handle(h,body);
+    }
+  }
+  function handle(h,body){
+    const t=h>>4;
+    if(t===2){
+      if(body[1]===0){backoff=1000;clearInterval(ping);ping=setInterval(()=>send(mqU8([0xC0,0])),25000);
+        for(const f of subs)sendSub(f);
+        setConn(true);
+        for(const [tp,pl] of pend)send(pkt(0x31,[str(tp),pl]));pend.clear();}
+    }else if(t===3){
+      const tl=(body[0]<<8)|body[1],topic=mqTD.decode(body.subarray(2,2+tl));let p=2+tl;
+      const qos=(h>>1)&3;
+      if(qos>0){const id=(body[p]<<8)|body[p+1];p+=2;if(qos===1)send(pkt(0x40,[mqU8([id>>8,id&255])]));}
+      if(self.onmsg)self.onmsg(topic,body.slice(p),!!(h&1));
+    }else if(t===9){
+      const id=(body[0]<<8)|body[1],f=idFilter[id];delete idFilter[id];
+      if(f&&waiters[f]){const w=waiters[f];delete waiters[f];w.forEach(fn=>fn());}
+    }
+  }
+  self.subscribe=f=>new Promise(res=>{(waiters[f]=waiters[f]||[]).push(res);if(!subs.has(f)){subs.add(f);if(self.connected)sendSub(f);}else if(self.connected)sendSub(f);});
+  self.unsubscribe=f=>{if(!subs.delete(f))return;const id=nid();send(pkt(0xA2,[mqU8([id>>8,id&255]),str(f)]));};
+  self.publish=(topic,payload,retain)=>{
+    const pl=payload||new Uint8Array(0);
+    if(self.connected)send(pkt(retain?0x31:0x30,[str(topic),pl]));
+    else if(retain)pend.set(topic,pl);
+  };
+  self.close=()=>{closed=true;send(mqU8([0xE0,0]));try{ws.close();}catch(e){}};
+  open();
+  return self;
+}
+
+/* --- 암호화 --- */
+async function mqMakeCipher(code){
+  const subtle=window.crypto&&window.crypto.subtle;
+  if(!subtle)return {enc:async s=>mqTE.encode('P'+s),dec:async b=>{const s=mqTD.decode(b);return s[0]==='P'?s.slice(1):null;}};
+  const base=await subtle.importKey('raw',mqTE.encode(code),'PBKDF2',false,['deriveKey']);
+  const key=await subtle.deriveKey({name:'PBKDF2',salt:mqTE.encode('allin-chip-house'),iterations:20000,hash:'SHA-256'},
+    base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+  return {
+    enc:async s=>{const iv=crypto.getRandomValues(new Uint8Array(12));const c=new Uint8Array(await subtle.encrypt({name:'AES-GCM',iv},key,mqTE.encode(s)));return mqCat([mqU8([69]),iv,c]);},
+    dec:async b=>{if(b[0]!==69)return null;try{return mqTD.decode(await subtle.decrypt({name:'AES-GCM',iv:b.subarray(1,13)},key,b.subarray(13)));}catch(e){return null;}}
+  };
+}
+const mqT=s=>MQ.root+'/'+s;
+function mqPub(sub,obj,retain){   // 보낸 순서 그대로 나가도록 줄 세움
+  const p=MQ.pq.then(async()=>{const pl=obj==null?null:await MQ.cipher.enc(JSON.stringify(obj));MQ.cli.publish(mqT(sub),pl,retain);});
+  MQ.pq=p.catch(()=>{});return p;
+}
+function mqOnMsg(topic,payload,retain){
+  MQ.q=MQ.q.then(async()=>{
+    if(!topic.startsWith(MQ.root+'/'))return;
+    const sub=topic.slice(MQ.root.length+1);
+    let val=null;
+    if(payload.length){const s=await MQ.cipher.dec(payload);if(s==null)return;try{val=JSON.parse(s);}catch(e){return;}}
+    if(sub.startsWith('d/')){
+      const path=sub.slice(2);
+      if(val&&typeof val==='object'&&!Array.isArray(val))MQ.cache.set(path,val);else MQ.cache.delete(path);
+      mqDirty(path);
+    }else if(sub.startsWith('l/')){
+      const path=sub.slice(2);
+      if(val&&typeof val==='object'){
+        const ttl=Number(val.ttl)||3000;
+        // 저장돼 있던(지난) 잠금은 보낸 시각 기준으로 남은 시간만 인정
+        const left=retain?Math.min(ttl,Math.max(0,ttl-(Date.now()-(Number(val.at)||0)))):ttl;
+        MQ.leases.set(path,{h:String(val.h),n:String(val.n),until:Date.now()+left});
+      }
+      else MQ.leases.delete(path);
+    }else if(sub.startsWith('rm/')){
+      const m=sub.match(/^rm\/([^/]+)\/(pr|ev)\/([^/]+)$/);if(!m)return;
+      const R=MQ.rooms[m[1]];if(!R)return;
+      if(m[2]==='pr'){
+        if(val&&typeof val==='object'){
+          if(retain&&Date.now()-(Number(val.t)||0)>120000)return;
+          R.peers.set(m[3],{presence:Object.freeze(Object.assign({},val.p||{})),seen:Date.now()});
+        }else R.peers.delete(m[3]);
+        mqPeersChanged(R);
+      }else if(val&&typeof val==='object'){
+        const fns=R.h[m[3]]||[],me=val.f===MQ.peer;
+        fns.slice().forEach(fn=>{try{fn({topic:m[3],data:val.d,isMe:me,sameTab:me,peer:String(val.f||''),by:null,kind:'viewer',guest:false});}catch(e){}});
+      }
+    }
+  }).catch(()=>{});
+}
+function mqDirty(path){
+  MQ.dirty.add(path);
+  if(MQ.flushT)return;
+  MQ.flushT=setTimeout(()=>{
+    MQ.flushT=null;const d=[...MQ.dirty];MQ.dirty.clear();
+    for(const l of MQ.ls){
+      if(!l.ready)continue;
+      if(l.kind==='doc'?d.includes(l.path):d.some(p=>p.slice(0,p.lastIndexOf('/'))===l.path))mqDeliver(l);
+    }
+  },30);
+}
+function mqEnsure(filter){
+  if(MQ.settle.has(filter))return MQ.settle.get(filter);
+  const p=MQ.cli.subscribe(filter).then(()=>new Promise(r=>setTimeout(r,500))).then(()=>MQ.q);
+  MQ.settle.set(filter,p);return p;
+}
+const mqMeta={fromCache:false,hasPendingWrites:false};
+function mqSnapDoc(path,v){return {id:path.slice(path.lastIndexOf('/')+1),exists:v!=null,data:()=>v!=null?JSON.parse(JSON.stringify(v)):undefined,metadata:mqMeta};}
+function mqColSnap(path,opts){
+  let docs=[];
+  for(const [p,v] of MQ.cache)if(p.slice(0,p.lastIndexOf('/'))===path)docs.push([p,v]);
+  if(opts.order){const [f,dir]=opts.order;docs.sort((a,b)=>{const x=a[1][f],y=b[1][f];if(x==null)return 1;if(y==null)return -1;return (x<y?-1:x>y?1:0)*(dir==='desc'?-1:1);});}
+  else docs.sort((a,b)=>a[0]<b[0]?-1:1);
+  if(opts.limit)docs=docs.slice(0,opts.limit);
+  const ds=docs.map(([p,v])=>mqSnapDoc(p,v));
+  return {docs:ds,size:ds.length,empty:!ds.length,docChanges:()=>[],metadata:mqMeta};
+}
+function mqDeliver(l){try{l.next(l.kind==='doc'?mqSnapDoc(l.path,MQ.cache.get(l.path)):mqColSnap(l.path,l.opts));}catch(e){}}
+const mqRid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+function mqDoc(path){
+  return {id:path.slice(path.lastIndexOf('/')+1),path,
+    async get(){await mqEnsure(mqT('d/'+path));return mqSnapDoc(path,MQ.cache.get(path));},
+    async set(data){const v=JSON.parse(JSON.stringify(data));MQ.cache.set(path,v);mqDirty(path);await mqPub('d/'+path,v,true);},
+    async update(data){
+      await mqEnsure(mqT('d/'+path));
+      if(!MQ.cache.has(path))throw {code:'invalid_argument',message:'document does not exist'};
+      return this.set(Object.assign({},MQ.cache.get(path),JSON.parse(JSON.stringify(data))));
+    },
+    async delete(){MQ.cache.delete(path);mqDirty(path);await mqPub('d/'+path,null,true);if(MQ.leases.has(path))await mqPub('l/'+path,null,true);},
+    async acquire(o){
+      const holder=String(o&&o.holder||MQ.peer),ttl=Math.min(Math.max(Number(o&&o.ttlMs)||30000,1000),600000);
+      await mqEnsure(mqT('l/'+path));
+      const cur=MQ.leases.get(path);
+      if(cur&&cur.until>Date.now()&&cur.h!==holder)return {acquired:false};
+      const n=Math.random().toString(36).slice(2);
+      await mqPub('l/'+path,{h:holder,n,ttl,at:Date.now()},true);
+      await new Promise(r=>setTimeout(r,450));await MQ.q;
+      const now=MQ.leases.get(path);
+      return now&&now.n===n?{acquired:true,holder}:{acquired:false};
+    },
+    onSnapshot(next){const l={kind:'doc',path,next,ready:false};MQ.ls.add(l);
+      mqEnsure(mqT('d/'+path)).then(()=>{if(MQ.ls.has(l)){l.ready=true;mqDeliver(l);}});return ()=>MQ.ls.delete(l);},
+    collection(sub){return mqCol(path+'/'+sub,{});}
+  };
+}
+function mqCol(path,opts){
+  return {path,
+    where(){return mqCol(path,opts);},
+    orderBy(f,d){return mqCol(path,Object.assign({},opts,{order:[f,d||'asc']}));},
+    limit(n){return mqCol(path,Object.assign({},opts,{limit:n}));},
+    doc(id){return mqDoc(path+'/'+(id||mqRid()));},
+    async add(d){const r=this.doc();await r.set(d);return r;},
+    async get(){await mqEnsure(mqT('d/'+path+'/+'));return mqColSnap(path,opts);},
+    onSnapshot(next){const l={kind:'col',path,opts,next,ready:false};MQ.ls.add(l);
+      mqEnsure(mqT('d/'+path+'/+')).then(()=>{if(MQ.ls.has(l)){l.ready=true;mqDeliver(l);}});return ()=>MQ.ls.delete(l);}
+  };
+}
+/* --- 실시간 룸 (접속자·이벤트) --- */
+function mqPeerList(R){
+  const out=[{peer:MQ.peer,presence:Object.freeze(Object.assign({},R.my)),isMe:true,sameTab:true,by:null,kind:'viewer',guest:false,updatedAt:Date.now()}];
+  for(const [peer,v] of R.peers)if(peer!==MQ.peer)out.push({peer,presence:v.presence,isMe:false,sameTab:false,by:null,kind:'viewer',guest:false,updatedAt:v.seen});
+  return out;
+}
+function mqPeersChanged(R){
+  if(R.pt)return;
+  R.pt=setTimeout(()=>{R.pt=null;const peers=mqPeerList(R);R.pf.slice().forEach(fn=>{try{fn({peers,joined:[],left:[],updated:peers});}catch(e){}});},16);
+}
+function mqRoom(name){
+  if(MQ.rooms[name])return MQ.rooms[name].api;
+  const R={name,peers:new Map(),pf:[],h:{},my:{},joined:false,pt:null,presT:null};
+  const prF=mqT('rm/'+name+'/pr/+'),evF=mqT('rm/'+name+'/ev/+');
+  R.pub=()=>{if(R.joined)mqPub('rm/'+name+'/pr/'+MQ.peer,{p:R.my,t:Date.now()},true);};
+  R.doJoin=async()=>{if(R.joined)return;R.joined=true;await Promise.all([MQ.cli.subscribe(prF),MQ.cli.subscribe(evF)]);R.pub();};
+  const api={name,
+    emit:async(topic,data)=>{if(MQ.connected)await mqPub('rm/'+name+'/ev/'+topic,{d:data,f:MQ.peer},false);},
+    on:(topic,fn)=>{(R.h[topic]=R.h[topic]||[]).push(fn);return ()=>{const a=R.h[topic],i=a.indexOf(fn);if(i>=0)a.splice(i,1);};},
+    presence:async patch=>{
+      for(const k in patch){if(patch[k]===null)delete R.my[k];else R.my[k]=patch[k];}
+      mqPeersChanged(R);
+      if(!R.presT)R.presT=setTimeout(()=>{R.presT=null;R.pub();},80);
+    },
+    peers:()=>mqPeerList(R),
+    onPeers:fn=>{R.pf.push(fn);setTimeout(()=>{const peers=mqPeerList(R);fn({peers,joined:peers,left:[],updated:[]});},0);return ()=>{const i=R.pf.indexOf(fn);if(i>=0)R.pf.splice(i,1);};},
+    connected:()=>MQ.connected,
+    onConnection:fn=>{MQ.connFns.push(fn);setTimeout(()=>fn(MQ.connected),0);return ()=>{};},
+    leave:async()=>{if(!R.joined)return;R.joined=false;await mqPub('rm/'+name+'/pr/'+MQ.peer,null,true);MQ.cli.unsubscribe(prF);MQ.cli.unsubscribe(evF);delete MQ.rooms[name];},
+    join:async n=>{const a=mqRoom(n);await MQ.rooms[n].doJoin();return a;},
+    canSendToClaudeSession:async()=>'off',
+    sendToClaudeSession:async()=>{throw {code:'claude_unavailable'};}
+  };
+  R.api=api;MQ.rooms[name]=R;return api;
+}
+setInterval(()=>{   // 접속 확인 신호 + 오래 조용한 접속자 정리
+  for(const n in MQ.rooms){const R=MQ.rooms[n];if(MQ.connected)R.pub();
+    let ch=false;for(const [p,v] of R.peers)if(Date.now()-v.seen>16000){R.peers.delete(p);ch=true;}
+    if(ch)mqPeersChanged(R);}
+},5000);
+
+function mqTryBroker(url,will){
+  return new Promise(res=>{
+    const cli=MqttWS(url,'allin-'+MQ.peer,will);
+    const to=setTimeout(()=>{if(!cli.connected){cli.close();res(null);}},7000);
+    cli.onstate=v=>{if(v){clearTimeout(to);res(cli);}};
+  });
+}
+async function mqStart(){
+  if(typeof WebSocket!=='function')return null;
+  let urls=MQ_BROKERS,code=MQ_CODE;
+  try{const u=new URLSearchParams(location.search);if(u.get('broker'))urls=[u.get('broker')];if(u.get('code'))code=u.get('code');}catch(e){}
+  try{MQ.cipher=await mqMakeCipher(code);}catch(e){return null;}
+  MQ.root='allin/'+mqHash(code+'#room');
+  const will={topic:mqT('rm/lobby/pr/'+MQ.peer),payload:null};
+  for(const url of urls){
+    const cli=await mqTryBroker(url,will);
+    if(cli){
+      MQ.cli=cli;MQ.broker=url.replace(/^wss?:\/\//,'').split(/[:/]/)[0];
+      MQ.connected=true;
+      cli.onmsg=mqOnMsg;
+      cli.onstate=v=>{MQ.connected=v;if(v){for(const n in MQ.rooms)MQ.rooms[n].pub();}MQ.connFns.slice().forEach(fn=>{try{fn(v);}catch(e){}});};
+      const lobby=mqRoom('lobby');await MQ.rooms.lobby.doJoin();
+      return {db:{doc:mqDoc,collection:p=>mqCol(p,{})},room:lobby};
+    }
+  }
+  return null;
+}
+
 /* ===================== ONLINE (공유 DB + 실시간 룸) ===================== */
 var NET={db:null,room:null,checked:false,ready:false,loaded:false,got:{players:false,settings:false},
   synced:{},q:{},pend:{},pendOp:{},feedN:0,peers:0,races:{},lastPrune:0};
@@ -1226,7 +1511,7 @@ function netLog(entry){
   netWrite('feed/'+NET.dev+'-'+(NET.feedN++%40),'set',entry);
 }
 function netBadge(){
-  if(NET.db&&NET.loaded)return `🟢 실시간 연결${NET.room?` · 접속 ${NET.peers}`:''}`;
+  if(NET.db&&NET.loaded)return `🟢 실시간 연결${NET.via?' ('+NET.via+')':''}`;
   if(NET.db)return '🟡 서버 연결 중…';
   return '⚪ 이 기기에만 저장 (오프라인)';
 }
@@ -1239,8 +1524,8 @@ function setNetUI(){
   const n=$('#netNote');
   if(NET.db&&NET.loaded)n.textContent='🟢 실시간 서버 연결됨 — 모든 기기의 순위가 함께 움직입니다';
   else if(NET.db)n.textContent='🔄 서버에서 참가자 명단을 불러오는 중…';
-  else if(NET.checked)n.textContent='⚪ 오프라인 모드 — 기록이 이 기기에만 저장됩니다';
-  else n.textContent='🔄 연결 확인 중…';
+  else if(NET.checked)n.textContent='⚪ 오프라인 모드 — 실시간 서버에 연결하지 못해 기록이 이 기기에만 저장됩니다';
+  else n.textContent=NET.connecting?'🔄 실시간 서버에 연결하는 중… (최대 15초)':'🔄 연결 확인 중…';
   const st=$('#onlineStatus');
   if(st)st.textContent=NET.db&&NET.loaded&&NET.room?'🟢 온라인 — 다른 기기의 방에 참가하거나 직접 방을 만드세요'
     :NET.db&&NET.loaded?'🟡 순위는 연결됨 · 실시간 룸 연결 안 됨 (레이스 대결 불가)'
@@ -1252,10 +1537,15 @@ function setNetUI(){
 
 async function initOnline(){
   for(let i=0;i<15&&!(window.claude&&typeof window.claude.use==='function');i++)await sleep(100);
-  if(!(window.claude&&typeof window.claude.use==='function')){NET.checked=true;NET.ready=true;setNetUI();renderRank();return;}
-  setNetUI();
   let db=null,room=null;
-  try{[db,room]=await Promise.all([window.claude.use('db').catch(()=>null),window.claude.use('room').catch(()=>null)]);}catch(e){}
+  if(window.claude&&typeof window.claude.use==='function'){
+    setNetUI();
+    try{[db,room]=await Promise.all([window.claude.use('db').catch(()=>null),window.claude.use('room').catch(()=>null)]);}catch(e){}
+  }else{
+    NET.connecting=true;setNetUI();
+    try{const mq=await mqStart();if(mq){db=mq.db;room=mq.room;NET.via=MQ.broker;}}catch(e){}
+    NET.connecting=false;
+  }
   NET.checked=true;NET.db=db;NET.room=room;
   if(!db){NET.ready=true;setNetUI();renderRank();return;}
   setNetUI();
@@ -1310,13 +1600,49 @@ async function initOnline(){
   },()=>{});
 
   if(room){
-    room.onPeers(ch=>{NET.peers=ch.peers.length;renderRankMetaOnly();});
+    room.onPeers(ch=>{NET.peerList=ch.peers;NET.peers=onlineIds().size;renderRankMetaOnly();});
+    announce();
     room.onConnection(()=>setNetUI(),()=>{NET.room=null;setNetUI();});
   }
+}
+function onlineIds(){
+  const ids=new Map();
+  const add=(id,nm)=>{id=String(id||'');if(/^\d{4}$/.test(id)&&!ids.has(id))ids.set(id,/^[가-힣]{1,6}$/.test(nm||'')?nm:'');};
+  if(NET&&NET.room&&NET.peerList)for(const pe of NET.peerList){
+    const pr=pe.presence||{},a=Array.isArray(pr.ids)?pr.ids.slice(0,4):[],n=Array.isArray(pr.names)?pr.names:[];
+    a.forEach((id,i)=>add(id,String(n[i]||'')));
+  }
+  if(meId&&S.players[meId])add(meId,S.players[meId].name);
+  if(p2Id&&S.players[p2Id])add(p2Id,S.players[p2Id].name);
+  return ids;
+}
+function isOnline(id){return onlineIds().has(id);}
+function renderOnline(){
+  const ids=onlineIds(),ul=$('#nowList');if(!ul)return;
+  $('#nowCount').textContent=ids.size;
+  ul.textContent='';
+  const arr=[...ids].map(([id,nm])=>{const p=S.players[id];return {id,name:p?p.name:nm,chips:p?p.chips:null};})
+    .sort((a,b)=>(b.chips||0)-(a.chips||0));
+  if(!arr.length){const li=document.createElement('li');li.textContent='아직 아무도 없습니다';ul.appendChild(li);}
+  for(const x of arr){
+    const li=document.createElement('li');if(x.id===meId)li.className='mine';
+    const b=document.createElement('span');b.textContent=x.id+x.name+(x.id===meId?' (나)':'');li.appendChild(b);
+    if(x.chips!=null){const sm=document.createElement('small');sm.textContent=won(x.chips);li.appendChild(sm);}
+    ul.appendChild(li);
+  }
+  $('#nowNote').textContent=NET&&NET.room&&NET.loaded?'다른 기기에서 입장한 사람도 실시간으로 표시됩니다'
+    :'오프라인 — 이 기기에서 입장한 사람만 보입니다';
+}
+function announce(){
+  const ids=[meId,p2Id].filter(id=>id&&S.players[id]);
+  if(NET&&NET.room)NET.room.presence({ids,names:ids.map(i=>S.players[i].name)}).catch(()=>{});
+  renderOnline();
 }
 function renderRankMetaOnly(){
   const arr=Object.values(S.players),total=arr.reduce((s,p)=>s+p.chips,0);
   $('#rankMeta').textContent=`참가자 ${arr.length}명 · 전체 칩 ${won(total)} · ${netBadge()}`;
+  renderOnline();
+  const list=$('#rankList');if(list)renderRank();
 }
 function pruneRaces(){
   const now=Date.now();if(now-NET.lastPrune<60000)return;NET.lastPrune=now;
@@ -1421,15 +1747,21 @@ function rpsMsg(t,sub,cls){const m=$('#rpsMsg');m.className='msg'+(cls?' '+cls:'
 
 /* 결과 판정: 먼저 잠금을 잡은 기기 하나만 결과를 기록 — 양쪽이 같은 결과를 봄 */
 async function claimDoc(id,result,extra){
-  const ref=NET.db.doc('races/'+id);
-  let got=false;
-  for(let i=0;i<4&&!got;i++){const l=await ref.acquire({holder:NET.dev,ttlMs:3000});got=l.acquired;if(!got)await sleep(150);}
-  if(!got)return null;
-  const s=await ref.get(),d=s.exists?s.data():null;
-  if(d&&d.winner)return {w:d.winner,d};
-  const patch=Object.assign({winner:result,status:'done',doneAt:Date.now()},extra||{});
-  await ref.update(patch);
-  return {w:result,d:Object.assign({},d||{},patch)};
+  const ref=NET.db.doc('races/'+id),t0=Date.now();
+  while(Date.now()-t0<12000){
+    const cur=NET.races[id];
+    if(cur&&cur.winner)return {w:cur.winner,d:cur};          // 상대가 이미 판정함
+    const l=await ref.acquire({holder:NET.dev,ttlMs:3000});
+    if(l.acquired){
+      const s=await ref.get(),d=s.exists?s.data():null;
+      if(d&&d.winner)return {w:d.winner,d};
+      const patch=Object.assign({winner:result,status:'done',doneAt:Date.now()},extra||{});
+      await ref.update(patch);
+      return {w:result,d:Object.assign({},d||{},patch)};
+    }
+    await sleep(250);                                          // 잠금이 풀리거나 결과가 올 때까지
+  }
+  return null;
 }
 
 /* ---------- 내 온라인 경기 ---------- */
